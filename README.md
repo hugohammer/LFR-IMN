@@ -122,4 +122,3 @@ backbone_lfr = TabResNetBackbone(hypernet_model=hypernet_lfr)
 lfr_model = LFR_IMN(backbone_lfr, device=device)
 ```
 
-This ensures that users know exactly what to look for and guarantees their code will run successfully on the first try.
