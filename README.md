@@ -91,18 +91,42 @@ from lfr_imn.metrics import compute_infidelity, compute_tuning_score
 from models.hypernetwork import HyperNet
 ```
 
-2. Update the model initialization:
 
-```bash
-# Create the original TabResNet HyperNet
-raw_hypernet = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
+2. Update the model initializations:
 
-# Wrap it in the LFR-IMN compatible backbone
-backbone = TabResNetBackbone(hypernet_model=raw_hypernet)
+The example script trains two distinct models (Baseline and LFR-IMN). You will need to replace the `MLPBackbone` initialization in **both** sections to ensure they use separate TabResNet architectures.
 
-# Initialize the LFR-IMN model
-model = LFR_IMN(backbone)
-````
+In **Section 2 (TRAINING BASELINE IMN)**, find these lines:
+```python
+backbone_base = MLPBackbone(num_features=P)
+imn_model = LFR_IMN(backbone_base, device=device)
+```
 
-Because of the modular design, the .fit(), .predict(), and .explain() functions will work exactly the same way regardless of the underlying network architecture.
+And replace them with:
 
+```python
+# Initialize a new TabResNet HyperNet and wrap it
+hypernet_base = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
+backbone_base = TabResNetBackbone(hypernet_model=hypernet_base)
+imn_model = LFR_IMN(backbone_base, device=device)
+```
+
+3. Update model training
+
+In **Section 3 (TRAINING LFR-IMN)**, find these lines:
+
+```python
+backbone_lfr = MLPBackbone(num_features=P)
+lfr_model = LFR_IMN(backbone_lfr, device=device)
+```
+
+And replace them with:
+
+```python
+# Initialize a new, separate TabResNet HyperNet and wrap it
+hypernet_lfr = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
+backbone_lfr = TabResNetBackbone(hypernet_model=hypernet_lfr)
+lfr_model = LFR_IMN(backbone_lfr, device=device)
+```
+
+This ensures that users know exactly what to look for and guarantees their code will run successfully on the first try.
