@@ -36,10 +36,14 @@ cd LFR-IMN
 ```
 
 2. Create and activate a virtual environment (optional but recommended)
+```bash
 python3 -m venv venv
-source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+source venv/bin/activate
+# On Windows, use: 
+venv\Scripts\activate
+```
 
-3. Install the required dependencies
+4. Install the required dependencies
 pip install -r requirements.txt
 
 ## Running the Examples
