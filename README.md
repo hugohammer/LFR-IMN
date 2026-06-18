@@ -64,9 +64,8 @@ To do this, you will need access to the original IMN codebase. Open examples/syn
 
 1. Update the imports at the top of the file:
 
-from lfr_imn.backbones import TabResNetBackbone
-
 ```bash
+from lfr_imn.backbones import TabResNetBackbone
 # Add the original IMN directory to your path (adjust the path as needed)
 import sys
 import os
