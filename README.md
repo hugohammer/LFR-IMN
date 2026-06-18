@@ -68,7 +68,7 @@ This script will:
 
 The LFR-IMN framework is designed to be completely modular. While the default example uses an MLPBackbone, you can easily swap it for the highly expressive TabResNetBackbone used in the original IMN paper.
 
-To do this, you will need access to the original IMN codebase. Open examples/synthetic_example.py and modify the imports and model initialization as follows:
+To do this, you will need access to the original [IMN codebase](https://github.com/ArlindKadra/IMN). Open examples/synthetic_example.py and modify the imports and model initialization as follows:
 
 1. Update the imports at the top of the file:
 
