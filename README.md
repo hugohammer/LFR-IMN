@@ -92,11 +92,7 @@ from models.hypernetwork import HyperNet
 ```
 
 
-2. Update the model initializations:
-
-The example script trains two distinct models (Baseline and LFR-IMN). You will need to replace the `MLPBackbone` initialization in **both** sections to ensure they use separate TabResNet architectures.
-
-In **Section 2 (TRAINING BASELINE IMN)**, find these lines:
+2. The example script trains two distinct models (Baseline and LFR-IMN). You will need to replace the `MLPBackbone` initialization in **both** sections to ensure they use separate TabResNet architectures. In **Section 2 (TRAINING BASELINE IMN)**, find these lines:
 ```python
 backbone_base = MLPBackbone(num_features=P)
 imn_model = LFR_IMN(backbone_base, device=device)
@@ -111,15 +107,12 @@ backbone_base = TabResNetBackbone(hypernet_model=hypernet_base)
 imn_model = LFR_IMN(backbone_base, device=device)
 ```
 
-3. Update model training
-
-In **Section 3 (TRAINING LFR-IMN)**, find these lines:
+3. In **Section 3 (TRAINING LFR-IMN)**, find these lines:
 
 ```python
 backbone_lfr = MLPBackbone(num_features=P)
 lfr_model = LFR_IMN(backbone_lfr, device=device)
 ```
-
 And replace them with:
 
 ```python
