@@ -1,6 +1,8 @@
 # LFR-IMN: Local Fidelity Regularized Interpretable Mesomorphic Neural Networks
 
+<!--
 Official repository for the paper: **[Insert Paper Title Here]**.
+-->
 
 ## Overview
 The **Interpretable Mesomorphic Neural Network (IMN)** is a powerful architecture that bridges the gap between the predictive performance of deep learning and the transparency of linear models for tabular data. It uses a neural network backbone to dynamically generate instance-wise linear weights, providing local feature attributions.
