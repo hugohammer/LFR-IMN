@@ -23,6 +23,7 @@ LFR-IMN/
 │   └── synthetic_example.py # End-to-end quickstart guide
 ├── requirements.txt
 └── README.md
+```
 
 ## Installation
 
