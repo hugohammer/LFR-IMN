@@ -5,7 +5,7 @@ Official repository for the paper: **[Insert Paper Title Here]**.
 -->
 
 ## Overview
-The **Interpretable Mesomorphic Neural Network (IMN)** is a powerful architecture that bridges the gap between the predictive performance of deep learning and the transparency of linear models for tabular data. It uses a neural network backbone to dynamically generate instance-wise linear weights, providing local feature attributions.
+The [Interpretable Mesomorphic Neural Network (IMN)](https://github.com/ArlindKadra/IMN) is a powerful architecture that bridges the gap between the predictive performance of deep learning and the transparency of linear models for tabular data. It uses a neural network backbone to dynamically generate instance-wise linear weights, providing local feature attributions.
 
 However, unregularized IMNs are prone to discovering degenerate solutions—collapsing predictive magnitude into the intercept and yielding unfaithful explanations. 
 
