@@ -50,9 +50,9 @@ pip install -r requirements.txt
 
 ## Running the Examples
 
-We provide a ready-to-use synthetic data example to demonstrate how Local Fidelity Regularization (LFR) prevents degenerate weight collapse and perfectly recovers ground-truth feature attributions.
+We provide a ready-to-use synthetic data example to demonstrate how Local Fidelity Regularization (LFR) prevents degenerate weight collapse and perfectly recovers ground-truth feature attributions. The example can be run using either a MPL or TabResNet backbone, the latter used in the original IMN paper. To run the code with the TabResNet backbone, you will need access to the original [IMN codebase](https://github.com/ArlindKadra/IMN). 
 
-To run the default example (which uses a Multilayer Perceptron backbone), simply execute:
+To run the default example, simply execute:
 
 ```bash
 python examples/synthetic_example.py
@@ -61,64 +61,5 @@ python examples/synthetic_example.py
 This script will:
 
 1. Train an unregularized Baseline IMN.
-2. Train an LFR-IMN and compute the tuning score $S$.
+2. Train an LFR-IMN and compute the tuning score $S(\gamma)$.
 3. Output a comparison of the local feature attributions against the theoretical ground truth for a sample data point.
-
-## Switching to the TabResNet Backbone
-
-The LFR-IMN framework is designed to be completely modular. While the default example uses an MLPBackbone, you can easily swap it for the highly expressive TabResNetBackbone used in the original IMN paper.
-
-To do this, you will need access to the original [IMN codebase](https://github.com/ArlindKadra/IMN). Open examples/synthetic_example.py and modify the imports and model initialization as follows:
-
-1. Replace the current import block at the very top of examples/synthetic_example.py with the following code. This swaps the backbone and ensures Python can find both repositories:
-
-```bash
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# Add the original IMN directory to your path (adjust the path if necessary)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../IMN')))
-
-import torch
-import numpy as np
-from sklearn.metrics import mean_squared_error, r2_score
-
-from lfr_imn.backbones import TabResNetBackbone
-from lfr_imn.model import LFR_IMN
-from lfr_imn.metrics import compute_infidelity, compute_tuning_score
-
-from models.hypernetwork import HyperNet
-```
-
-
-2. The example script trains two distinct models (Baseline and LFR-IMN). You will need to replace the `MLPBackbone` initialization in **both** sections to ensure they use separate TabResNet architectures. In **Section 2 (TRAINING BASELINE IMN)**, find these lines:
-```python
-backbone_base = MLPBackbone(num_features=P)
-imn_model = LFR_IMN(backbone_base, device=device)
-```
-
-And replace them with:
-
-```python
-# Initialize a new TabResNet HyperNet and wrap it
-hypernet_base = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
-backbone_base = TabResNetBackbone(hypernet_model=hypernet_base)
-imn_model = LFR_IMN(backbone_base, device=device)
-```
-
-3. In **Section 3 (TRAINING LFR-IMN)**, find these lines:
-
-```python
-backbone_lfr = MLPBackbone(num_features=P)
-lfr_model = LFR_IMN(backbone_lfr, device=device)
-```
-And replace them with:
-
-```python
-# Initialize a new, separate TabResNet HyperNet and wrap it
-hypernet_lfr = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
-backbone_lfr = TabResNetBackbone(hypernet_model=hypernet_lfr)
-lfr_model = LFR_IMN(backbone_lfr, device=device)
-```
-
