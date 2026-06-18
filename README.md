@@ -48,7 +48,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Running the Examples
+## Running the Example
 
 We provide a ready-to-use synthetic data example to demonstrate how Local Fidelity Regularization (LFR) prevents degenerate weight collapse and perfectly recovers ground-truth feature attributions. The example can be run using either a MPL or TabResNet backbone, the latter used in the original IMN paper. To run the code with the TabResNet backbone, you will need access to the original [IMN codebase](https://github.com/ArlindKadra/IMN). 
 
