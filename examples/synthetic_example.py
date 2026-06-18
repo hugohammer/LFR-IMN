@@ -1,15 +1,28 @@
 import sys
 import os
+
+# Add the parent directory so Python can find 'lfr_imn'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the original IMN directory to your path (adjust if your IMN folder is elsewhere)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../IMN')))
 
 import torch
 import numpy as np
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error
 
-# Import from our new package
-from lfr_imn.backbones import MLPBackbone
+from lfr_imn.backbones import MLPBackbone, TabResNetBackbone
 from lfr_imn.model import LFR_IMN
-from lfr_imn.metrics import compute_infidelity, compute_tuning_score
+
+# ==========================================
+# 0. CONFIGURATION TOGGLE
+# ==========================================
+# Set to True to use TabResNet, False to use MLP
+USE_TABRESNET = True
+
+# Hardcoded optimal hyperparameters from the paper
+LAMBDA_SPARSE = 0.01
+GAMMA_LFR = 10.0 if USE_TABRESNET else 100.0
+EPOCHS = 800
 
 # ==========================================
 # 1. SYNTHETIC DATA GENERATION
@@ -24,68 +37,74 @@ def generate_data(n_samples):
     X = np.random.normal(0, 1, size=(n_samples, P)).astype(np.float32)
     e = np.random.normal(0, 0.1, size=n_samples).astype(np.float32)
     y = 1.0 + X[:, 0] + X[:, 1] + X[:, 0]*X[:, 1] + e
-    return torch.tensor(X).to(device), torch.tensor(y).to(device)
+    return torch.tensor(X).to(device), torch.tensor(y).to(device), X, y
 
-X_train, y_train = generate_data(N_train)
-X_test, y_test = generate_data(N_test)
-
-# ==========================================
-# 2. TRAINING BASELINE IMN (Unregularized)
-# ==========================================
-print("Training Baseline IMN (gamma=0)...")
-backbone_base = MLPBackbone(num_features=P)
-imn_model = LFR_IMN(backbone_base, device=device)
-
-# Fit without LFR penalty
-imn_model.fit(X_train, y_train, lambda_sparse=0.01, gamma_lfr=0.0, epochs=500)
-
-# Evaluate Baseline
-y_pred_base = imn_model.predict(X_test)
-R2_base = r2_score(y_test.cpu().numpy(), y_pred_base)
-I_base = compute_infidelity(imn_model.backbone, X_test)
-
-print(f"Baseline R2: {R2_base:.4f} | Baseline Infidelity: {I_base:.4f}\n")
+X_train, y_train, _, _ = generate_data(N_train)
+X_test, y_test, X_test_np, y_test_np = generate_data(N_test)
 
 # ==========================================
-# 3. TRAINING LFR-IMN & CALCULATING SCORE S
+# 2. MODEL INITIALIZATION HELPER
 # ==========================================
-gamma_val = 100.0  # Assume tuned optimal gamma
-print(f"Training LFR-IMN (gamma={gamma_val})...")
+def get_model():
+    if USE_TABRESNET:
+        from models.hypernetwork import HyperNet
+        raw_hypernet = HyperNet(nr_features=P, nr_classes=1, nr_blocks=2, hidden_size=64)
+        backbone = TabResNetBackbone(hypernet_model=raw_hypernet)
+    else:
+        backbone = MLPBackbone(num_features=P)
+    return LFR_IMN(backbone, device=device)
 
-backbone_lfr = MLPBackbone(num_features=P)
-lfr_model = LFR_IMN(backbone_lfr, device=device)
+# ==========================================
+# 3. TRAINING
+# ==========================================
+backbone_name = "TabResNet" if USE_TABRESNET else "MLP"
+print(f"Training using {backbone_name} backbone for {EPOCHS} epochs...\n")
 
-# Fit WITH LFR penalty
-lfr_model.fit(X_train, y_train, lambda_sparse=0.01, gamma_lfr=gamma_val, epochs=500)
+# --- Train Baseline IMN ---
+print("1. Training Baseline IMN (gamma=0)...")
+imn_model = get_model()
+imn_model.fit(X_train, y_train, lambda_sparse=LAMBDA_SPARSE, gamma_lfr=0.0, epochs=EPOCHS)
+mse_base = mean_squared_error(y_test_np, imn_model.predict(X_test))
 
-# Evaluate LFR
-y_pred_lfr = lfr_model.predict(X_test)
-R2_lfr = r2_score(y_test.cpu().numpy(), y_pred_lfr)
-I_lfr = compute_infidelity(lfr_model.backbone, X_test)
-
-# Compute tuning score S
-score_S, R_F = compute_tuning_score(D=R2_lfr, I_base=I_base, I_model=I_lfr, alpha_score=0.5)
-
-print(f"LFR-IMN R2: {R2_lfr:.4f} | LFR Infidelity: {I_lfr:.4f}")
-print(f"Fidelity Ratio (R_F): {R_F:.4f} | Final Score (S): {score_S:.4f}\n")
+# --- Train LFR-IMN ---
+print(f"2. Training Optimal LFR-IMN (gamma={GAMMA_LFR})...")
+lfr_model = get_model()
+lfr_model.fit(X_train, y_train, lambda_sparse=LAMBDA_SPARSE, gamma_lfr=GAMMA_LFR, epochs=EPOCHS)
+mse_lfr = mean_squared_error(y_test_np, lfr_model.predict(X_test))
 
 # ==========================================
 # 4. EXPLAINABILITY COMPARISON (Patient 42)
 # ==========================================
 patient_idx = 42
 X_patient = X_test[patient_idx].unsqueeze(0)
+x1, x2 = X_test_np[patient_idx, 0], X_test_np[patient_idx, 1]
 
-# Ground truth math from the data generating process: y = 1 + x1 + x2 + x1*x2
-x1, x2 = X_patient[0, 0].item(), X_patient[0, 1].item()
+# Ground truth mathematical gradients: y = 1 + x1 + x2 + x1*x2
 true_grad_x1 = 1.0 + x2
 true_grad_x2 = 1.0 + x1
+true_intercept = 1.0 - (x1 * x2)
 
-w_base, _ = imn_model.explain(X_patient)
-w_lfr, _ = lfr_model.explain(X_patient)
+w_base, w0_base = imn_model.explain(X_patient)
+w_lfr, w0_lfr = lfr_model.explain(X_patient)
 
-print("="*60)
-print(f"Feature Attributions for Patient {patient_idx} (x1={x1:.4f}, x2={x2:.4f})")
-print("="*60)
-print(f"True Gradients : w1 = {true_grad_x1:7.4f}, w2 = {true_grad_x2:7.4f}")
-print(f"Baseline IMN   : w1 = {w_base[0][0]:7.4f}, w2 = {w_base[0][1]:7.4f}")
-print(f"LFR-IMN        : w1 = {w_lfr[0][0]:7.4f}, w2 = {w_lfr[0][1]:7.4f}")
+# ==========================================
+# 5. RESULTS OUTPUT
+# ==========================================
+print("\n" + "="*80)
+print(f" FINAL PERFORMANCE & LOCAL EXPLAINABILITY (Patient {patient_idx} | {backbone_name} Backbone)")
+print("="*80)
+print(f"Input Features: x1={x1:.4f}, x2={x2:.4f}")
+print("Theoretical Optimal Test MSE : ~0.0100 (Based on injected noise)\n")
+
+header_str = f"{'Metric':<14} | {'True':<8} | {'IMN Baseline':<16} | {'LFR-IMN':<20}"
+print(header_str)
+print("-" * len(header_str))
+
+def print_row(metric_name, true_val, imn_val, slf_val):
+    print(f"{metric_name:<14} | {true_val:<8.4f} | {imn_val:<16.4f} | {slf_val:<20.4f}")
+
+print_row("Test MSE", 0.0100, mse_base, mse_lfr)
+print_row("Intercept w_0", true_intercept, w0_base[0], w0_lfr[0])
+print_row("Grad x1", true_grad_x1, w_base[0][0], w_lfr[0][0])
+print_row("Grad x2", true_grad_x2, w_base[0][1], w_lfr[0][1])
+print("="*80)
