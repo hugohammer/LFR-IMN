@@ -70,14 +70,24 @@ The LFR-IMN framework is designed to be completely modular. While the default ex
 
 To do this, you will need access to the original [IMN codebase](https://github.com/ArlindKadra/IMN). Open examples/synthetic_example.py and modify the imports and model initialization as follows:
 
-1. Update the imports at the top of the file:
+1. Replace the current import block at the very top of examples/synthetic_example.py with the following code. This swaps the backbone and ensures Python can find both repositories:
 
 ```bash
-from lfr_imn.backbones import TabResNetBackbone
-# Add the original IMN directory to your path (adjust the path as needed)
 import sys
 import os
-sys.path.append(os.path.abspath('../IMN')) 
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the original IMN directory to your path (adjust the path if necessary)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../IMN')))
+
+import torch
+import numpy as np
+from sklearn.metrics import mean_squared_error, r2_score
+
+from lfr_imn.backbones import TabResNetBackbone
+from lfr_imn.model import LFR_IMN
+from lfr_imn.metrics import compute_infidelity, compute_tuning_score
+
 from models.hypernetwork import HyperNet
 ```
 
