@@ -54,7 +54,9 @@ We provide a ready-to-use synthetic data example to demonstrate how Local Fideli
 
 To run the default example (which uses a Multilayer Perceptron backbone), simply execute:
 
+```bash
 python examples/synthetic_example.py
+```
 
 This script will:
 
