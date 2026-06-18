@@ -30,8 +30,10 @@ LFR-IMN/
 We recommend using a Python virtual environment to avoid dependency conflicts. To install and set up the repository, run the following commands in your terminal:
 
 # 1. Clone the repository
+```bash
 git clone https://github.com/hugohammer/LFR-IMN.git
 cd LFR-IMN
+```
 
 # 2. Create and activate a virtual environment (optional but recommended)
 python3 -m venv venv
